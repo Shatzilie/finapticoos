@@ -35,6 +35,8 @@ COPY --parents packages/plugins/sandbox-providers/./*/package.json packages/plug
 COPY packages/plugins/paperclip-plugin-fake-sandbox/package.json packages/plugins/paperclip-plugin-fake-sandbox/
 COPY packages/memory/package.json packages/memory/
 COPY packages/adapters/anthropic-api/package.json packages/adapters/anthropic-api/
+COPY packages/finaptico-bridge/package.json packages/finaptico-bridge/
+COPY packages/finapticoos-smoke/package.json packages/finapticoos-smoke/
 COPY patches/ patches/
 
 RUN pnpm install --frozen-lockfile
