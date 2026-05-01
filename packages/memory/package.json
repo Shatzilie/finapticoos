@@ -1,0 +1,66 @@
+{
+  "name": "@finapticoos/memory",
+  "version": "0.1.0",
+  "description": "FinapticoOS shared semantic memory + control-plane schema for the Finaptico Supabase project (crm.finapticoos_* + crm.agent_shared_memory)",
+  "license": "MIT",
+  "homepage": "https://github.com/Shatzilie/finapticoos",
+  "bugs": {
+    "url": "https://github.com/Shatzilie/finapticoos/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shatzilie/finapticoos",
+    "directory": "packages/memory"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./client": "./src/client.ts",
+    "./embeddings": "./src/embeddings.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./schema": {
+        "types": "./dist/schema.d.ts",
+        "import": "./dist/schema.js"
+      },
+      "./client": {
+        "types": "./dist/client.d.ts",
+        "import": "./dist/client.js"
+      },
+      "./embeddings": {
+        "types": "./dist/embeddings.d.ts",
+        "import": "./dist/embeddings.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.4",
+    "openai": "^4.77.0",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "drizzle-kit": "^0.31.9",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
