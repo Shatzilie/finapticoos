@@ -22,8 +22,17 @@ if [ "$(id -g node)" -ne "$PGID" ]; then
     changed=1
 fi
 
-if [ "$changed" = "1" ]; then
-    chown -R node:node /finapticoos
-fi
+# Always normalise volume ownership before degrading to user node. The UID
+# remap branches above only fire when the host UID/GID differ from the build
+# defaults; when they match (Easypanel default) `changed=0` and chown was
+# previously skipped. That left the door open to a real failure mode: any
+# root process inside the container (Easypanel Console, `docker exec -u root`,
+# admin scripts) can create files in /finapticoos with root ownership, and
+# the next restart traps the runtime in EACCES because gosu drops to `node`
+# and `node` cannot read root-owned files. Running chown unconditionally
+# closes that gap. The cost on each restart is negligible for a volume with
+# a handful of MB of state — switch to `--from=root:root` if it ever becomes
+# hot.
+chown -R node:node /finapticoos
 
 exec gosu node "$@"
