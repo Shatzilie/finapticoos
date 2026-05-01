@@ -2,7 +2,10 @@ import { gzipSync } from "node:zlib";
 import type { FeedbackTraceBundle } from "@paperclipai/shared";
 import type { Config } from "../config.js";
 
-const DEFAULT_FEEDBACK_EXPORT_BACKEND_URL = "https://telemetry.paperclip.ing";
+// FinapticoOS Sprint 0 Bloque 2: default upstream Paperclip endpoint removed.
+// Feedback trace share is now opt-in: callers must set feedbackExportBackendUrl
+// explicitly. Calling uploadTraceBundle without it throws so the upload never
+// silently leaks data to a default Paperclip backend.
 
 function buildFeedbackShareObjectKey(bundle: FeedbackTraceBundle, exportedAt: Date) {
   const year = String(exportedAt.getUTCFullYear());
@@ -18,7 +21,16 @@ export interface FeedbackTraceShareClient {
 export function createFeedbackTraceShareClientFromConfig(
   config: Pick<Config, "feedbackExportBackendUrl" | "feedbackExportBackendToken">,
 ): FeedbackTraceShareClient {
-  const baseUrl = config.feedbackExportBackendUrl?.trim() || DEFAULT_FEEDBACK_EXPORT_BACKEND_URL;
+  const baseUrl = config.feedbackExportBackendUrl?.trim();
+  if (!baseUrl) {
+    return {
+      async uploadTraceBundle() {
+        throw new Error(
+          "Feedback trace share is disabled: configure feedbackExportBackendUrl explicitly to upload bundles.",
+        );
+      },
+    };
+  }
   const token = config.feedbackExportBackendToken?.trim();
   const endpoint = new URL("/feedback-traces", baseUrl).toString();
 

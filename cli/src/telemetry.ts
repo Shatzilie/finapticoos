@@ -6,7 +6,7 @@ import {
   trackInstallStarted,
   trackInstallCompleted,
   trackCompanyImported,
-} from "../../packages/shared/src/telemetry/index.js";
+} from "@paperclipai/shared/telemetry";
 import { resolvePaperclipInstanceRoot } from "./config/home.js";
 import { readConfig } from "./config/store.js";
 import { cliVersion } from "./version.js";

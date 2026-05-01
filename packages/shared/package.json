@@ -14,7 +14,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./telemetry": "./src/telemetry/index.ts",
+    "./telemetry": "./src/telemetry-stub.ts",
     "./*": "./src/*.ts"
   },
   "publishConfig": {
@@ -25,8 +25,8 @@
         "import": "./dist/index.js"
       },
       "./telemetry": {
-        "types": "./dist/telemetry/index.d.ts",
-        "import": "./dist/telemetry/index.js"
+        "types": "./dist/telemetry-stub.d.ts",
+        "import": "./dist/telemetry-stub.js"
       },
       "./*": {
         "types": "./dist/*.d.ts",
