@@ -120,6 +120,18 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins:
       requireEmailVerification: false,
       disableSignUp: config.authDisableSignUp,
     },
+    // FinapticoOS Sprint 0 Bloque 8 — sesión persistente 30 días + sliding
+    // window que refresca cuando la sesión supera 24 h. Spec L96. Cookies
+    // caducadas o cuentas eliminadas → 401 hasta nuevo sign-in.
+    //
+    // TODO Sprint 0.1 (≤2 semanas, deuda crítica documentada): añadir plugin
+    // `twoFactor` de better-auth + UI de enrollment/verify/recovery + tablas
+    // de TOTP secrets/backup codes. Plan línea 96 dice "MFA OBLIGATORIO" y
+    // Sprint 0 lo difiere por scope (Paperclip upstream no incluye MFA).
+    session: {
+      expiresIn: 60 * 60 * 24 * 30,
+      updateAge: 60 * 60 * 24,
+    },
     advanced: buildBetterAuthAdvancedOptions({ disableSecureCookies: isHttpOnly }),
   };
 

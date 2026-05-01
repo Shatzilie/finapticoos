@@ -8,6 +8,7 @@ import type { StorageService } from "./storage/types.js";
 import { httpLogger, errorHandler } from "./middleware/index.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
+import { createSecurityHeaders, createPublicRateLimit } from "./middleware/hardening.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { healthRoutes } from "./routes/health.js";
 import { companyRoutes } from "./routes/companies.js";
@@ -137,6 +138,14 @@ export async function createApp(
 ) {
   const app = express();
 
+  // Trust the first proxy hop so req.ip resolves to the real client IP behind
+  // Easypanel's Traefik. express-rate-limit needs this for per-IP buckets.
+  app.set("trust proxy", 1);
+
+  // Security headers FIRST so every response (including errors) carries them.
+  // FinapticoOS Sprint 0 Bloque 8 — see middleware/hardening.ts.
+  app.use(createSecurityHeaders());
+
   app.use(express.json({
     // Company import/export payloads can inline full portable packages.
     limit: "10mb",
@@ -145,6 +154,19 @@ export async function createApp(
     },
   }));
   app.use(httpLogger);
+
+  // Rate limit unauthenticated public surfaces. Authenticated routes are
+  // unrestricted — actorMiddleware admits them once the session cookie is
+  // valid. Order matters: rate limit MUST be mounted before the auth handler
+  // and the invite/health routes so the limiter actually intercepts them.
+  const publicRateLimit = createPublicRateLimit();
+  app.use("/api/auth/sign-in", publicRateLimit);
+  app.use("/api/auth/sign-up", publicRateLimit);
+  app.use("/api/auth/sign-out", publicRateLimit);
+  app.use("/api/auth/forget-password", publicRateLimit);
+  app.use("/api/auth/reset-password", publicRateLimit);
+  app.use("/invite", publicRateLimit);
+  app.use("/api/health", publicRateLimit);
   const privateHostnameGateEnabled = shouldEnablePrivateHostnameGuard({
     deploymentMode: opts.deploymentMode,
     deploymentExposure: opts.deploymentExposure,

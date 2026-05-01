@@ -8,6 +8,17 @@ import { Button } from "@/components/ui/button";
 import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
 import { Sparkles } from "lucide-react";
 
+// FinapticoOS Sprint 0 Bloque 8 — TODO crítico Sprint 0.1 (≤2 semanas):
+// integrar MFA obligatorio. Esta página actualmente expone solo email +
+// password porque Paperclip upstream no incluye flujo TOTP. Cuando se active
+// el plugin `twoFactor` de better-auth en server/src/auth/better-auth.ts,
+// añadir aquí el routing al challenge: si la respuesta de sign-in trae
+// `requiresTwoFactor: true`, redirigir a /auth/mfa-verify; si el user no
+// tiene MFA enrollado y el server lo exige, redirigir a /auth/mfa-enroll.
+// Plan Sprint 0 línea 96 dice "MFA OBLIGATORIO"; el día 1 entrega login
+// password robusto + sesión 30d + deployment authenticated como mitigación
+// transitoria. Tarea Notion crítica (Fatima) gestiona el deadline.
+
 type AuthMode = "sign_in" | "sign_up";
 
 export function AuthPage() {
