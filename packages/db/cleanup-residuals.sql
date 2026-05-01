@@ -209,6 +209,22 @@ BEGIN
   END LOOP;
 END $$;
 
+-- Vacía el journal Drizzle si existe. Sin esto, un deploy previo que avanzó
+-- parcialmente puede dejar filas en drizzle.__drizzle_migrations sin tablas
+-- correspondientes en public — el siguiente arranque ve "75 applied", asume
+-- BD migrada y NO reintenta las migrations sobre el public limpio. TRUNCATE
+-- RESTART IDENTITY borra todas las filas y resetea el SERIAL id. Idempotente:
+-- si la tabla journal aún no existe (BD virgen), no hace nada.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'drizzle' AND table_name = '__drizzle_migrations'
+  ) THEN
+    TRUNCATE TABLE drizzle.__drizzle_migrations RESTART IDENTITY;
+  END IF;
+END $$;
+
 -- Verificación post-cleanup. Esperado:
 --   public_tables   = 5 (las 5 legacy CRM, ninguna Paperclip)
 --   journal_rows    = 0 (drizzle.__drizzle_migrations vacío, list para
