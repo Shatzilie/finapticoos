@@ -10,8 +10,31 @@ const MIGRATIONS_FOLDER = fileURLToPath(new URL("./migrations", import.meta.url)
 const DRIZZLE_MIGRATIONS_TABLE = "__drizzle_migrations";
 const MIGRATIONS_JOURNAL_JSON = fileURLToPath(new URL("./migrations/meta/_journal.json", import.meta.url));
 
+// FinapticoOS divergence (Sprint 0 Bloque 6 hotfix): Paperclip core upstream
+// expects to own `public.*` of its DATABASE_URL. We point DATABASE_URL at the
+// shared Supabase Finaptico project, where `public.*` already holds 5 CRM
+// tables (blog_proposal_rounds, contable_acciones, notion_sync_clients,
+// prospection_news, tax_filings). To coexist without touching upstream
+// migrations or schema TS files, we route every Paperclip table to a
+// dedicated `finapticoos_core` schema via the connection search_path. The
+// drizzle journal (`drizzle.__drizzle_migrations`) stays in its own schema —
+// it does not collide with anything. Rebase note: if upstream changes
+// migration bootstrap logic in this file, port the change and re-apply this
+// isolation patch on top.
+const FINAPTICOOS_CORE_SCHEMA = "finapticoos_core";
+const FINAPTICOOS_SEARCH_PATH = `${FINAPTICOOS_CORE_SCHEMA}, public`;
+
 function createUtilitySql(url: string) {
-  return postgres(url, { max: 1, onnotice: () => {} });
+  return postgres(url, {
+    max: 1,
+    onnotice: () => {},
+    connection: { search_path: FINAPTICOOS_SEARCH_PATH },
+  });
+}
+
+async function applyCoreSchemaIsolation(sql: ReturnType<typeof postgres>): Promise<void> {
+  await sql.unsafe(`CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(FINAPTICOOS_CORE_SCHEMA)}`);
+  await sql.unsafe(`SET search_path TO ${FINAPTICOOS_SEARCH_PATH}`);
 }
 
 function isSafeIdentifier(value: string): boolean {
@@ -46,7 +69,7 @@ export type MigrationState =
     };
 
 export function createDb(url: string) {
-  const sql = postgres(url);
+  const sql = postgres(url, { connection: { search_path: FINAPTICOOS_SEARCH_PATH } });
   return drizzlePg(sql, { schema });
 }
 
@@ -244,6 +267,7 @@ async function applyPendingMigrationsManually(
 
   const sql = createUtilitySql(url);
   try {
+    await applyCoreSchemaIsolation(sql);
     const { migrationTableSchema, columnNames } = await ensureMigrationJournalTable(sql);
     const qualifiedTable = `${quoteIdentifier(migrationTableSchema)}.${quoteIdentifier(DRIZZLE_MIGRATIONS_TABLE)}`;
 
@@ -605,7 +629,7 @@ export async function inspectMigrations(url: string): Promise<MigrationState> {
     const tableCountResult = await sql<{ count: number }[]>`
       select count(*)::int as count
       from information_schema.tables
-      where table_schema = 'public'
+      where table_schema = ${FINAPTICOOS_CORE_SCHEMA}
         and table_type = 'BASE TABLE'
     `;
     const tableCount = tableCountResult[0]?.count ?? 0;
@@ -664,6 +688,7 @@ export async function applyPendingMigrations(url: string): Promise<void> {
   if (initialState.reason === "no-migration-journal-empty-db") {
     const sql = createUtilitySql(url);
     try {
+      await applyCoreSchemaIsolation(sql);
       const db = drizzlePg(sql);
       await migratePg(db, { migrationsFolder: MIGRATIONS_FOLDER });
     } finally {
@@ -731,7 +756,7 @@ export async function migratePostgresIfEmpty(url: string): Promise<MigrationBoot
     const tableCountResult = await sql<{ count: number }[]>`
       select count(*)::int as count
       from information_schema.tables
-      where table_schema = 'public'
+      where table_schema = ${FINAPTICOOS_CORE_SCHEMA}
         and table_type = 'BASE TABLE'
     `;
 
@@ -745,6 +770,7 @@ export async function migratePostgresIfEmpty(url: string): Promise<MigrationBoot
       return { migrated: false, reason: "not-empty-no-migration-journal", tableCount };
     }
 
+    await applyCoreSchemaIsolation(sql);
     const db = drizzlePg(sql);
     await migratePg(db, { migrationsFolder: MIGRATIONS_FOLDER });
 
