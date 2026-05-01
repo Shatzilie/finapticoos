@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
-import { inboxDismissals } from "@paperclipai/db";
+import type { Db } from "@finapticoos/db";
+import { inboxDismissals } from "@finapticoos/db";
 
 export function inboxDismissalService(db: Db) {
   return {

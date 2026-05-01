@@ -1,13 +1,13 @@
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@finapticoos/db";
 import {
   agents,
   companyMemberships,
   instanceUserRoles,
   issues,
   principalPermissionGrants,
-} from "@paperclipai/db";
-import type { PermissionKey, PrincipalType } from "@paperclipai/shared";
+} from "@finapticoos/db";
+import type { PermissionKey, PrincipalType } from "@finapticoos/shared";
 import { conflict } from "../errors.js";
 
 type MembershipRow = typeof companyMemberships.$inferSelect;

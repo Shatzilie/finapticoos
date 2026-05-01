@@ -1,4 +1,4 @@
-import type { InboxDismissal } from "@paperclipai/shared";
+import type { InboxDismissal } from "@finapticoos/shared";
 import { api } from "./client";
 
 export const inboxDismissalsApi = {

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { models as codexFallbackModels } from "@paperclipai/adapter-codex-local";
-import { models as cursorFallbackModels } from "@paperclipai/adapter-cursor-local";
-import { models as opencodeFallbackModels } from "@paperclipai/adapter-opencode-local";
-import { resetOpenCodeModelsCacheForTests } from "@paperclipai/adapter-opencode-local/server";
+import { models as codexFallbackModels } from "@finapticoos/adapter-codex-local";
+import { models as cursorFallbackModels } from "@finapticoos/adapter-cursor-local";
+import { models as opencodeFallbackModels } from "@finapticoos/adapter-opencode-local";
+import { resetOpenCodeModelsCacheForTests } from "@finapticoos/adapter-opencode-local/server";
 import { listAdapterModels, refreshAdapterModels } from "../adapters/index.js";
 import { resetCodexModelsCacheForTests } from "../adapters/codex-models.js";
 import { resetCursorModelsCacheForTests, setCursorModelsRunnerForTests } from "../adapters/cursor-models.js";

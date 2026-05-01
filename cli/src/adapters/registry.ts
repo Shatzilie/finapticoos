@@ -1,12 +1,12 @@
-import type { CLIAdapterModule } from "@paperclipai/adapter-utils";
-import { printAcpxStreamEvent } from "@paperclipai/adapter-acpx-local/cli";
-import { printClaudeStreamEvent } from "@paperclipai/adapter-claude-local/cli";
-import { printCodexStreamEvent } from "@paperclipai/adapter-codex-local/cli";
-import { printCursorStreamEvent } from "@paperclipai/adapter-cursor-local/cli";
-import { printGeminiStreamEvent } from "@paperclipai/adapter-gemini-local/cli";
-import { printOpenCodeStreamEvent } from "@paperclipai/adapter-opencode-local/cli";
-import { printPiStreamEvent } from "@paperclipai/adapter-pi-local/cli";
-import { printOpenClawGatewayStreamEvent } from "@paperclipai/adapter-openclaw-gateway/cli";
+import type { CLIAdapterModule } from "@finapticoos/adapter-utils";
+import { printAcpxStreamEvent } from "@finapticoos/adapter-acpx-local/cli";
+import { printClaudeStreamEvent } from "@finapticoos/adapter-claude-local/cli";
+import { printCodexStreamEvent } from "@finapticoos/adapter-codex-local/cli";
+import { printCursorStreamEvent } from "@finapticoos/adapter-cursor-local/cli";
+import { printGeminiStreamEvent } from "@finapticoos/adapter-gemini-local/cli";
+import { printOpenCodeStreamEvent } from "@finapticoos/adapter-opencode-local/cli";
+import { printPiStreamEvent } from "@finapticoos/adapter-pi-local/cli";
+import { printOpenClawGatewayStreamEvent } from "@finapticoos/adapter-openclaw-gateway/cli";
 import { processCLIAdapter } from "./process/index.js";
 import { httpCLIAdapter } from "./http/index.js";
 

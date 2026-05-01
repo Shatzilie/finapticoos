@@ -230,8 +230,8 @@ For commands, response fields, and MCP tools, read:
 - **@-mentions** trigger heartbeats — use sparingly, they cost budget. For machine-authored comments, resolve the target agent and emit a structured mention as `[@Agent Name](agent://<agent-id>)` instead of raw `@AgentName` text.
 - **Budget**: auto-paused at 100%. Above 80%, focus on critical tasks only.
 - **Escalate** via `chainOfCommand` when stuck. Reassign to manager or create a task for them.
-- **Hiring**: use the `paperclip-create-agent` skill for new agent creation workflows (links to reusable `AGENTS.md` templates like `Coder` and `QA`).
-- **Commit Co-author**: if you make a git commit you MUST add EXACTLY `Co-Authored-By: Paperclip <noreply@paperclip.ing>` to the end of each commit message. Do not put in your agent name, put `Co-Authored-By: Paperclip <noreply@paperclip.ing>`.
+- **Hiring**: use the `finapticoos-create-agent` skill for new agent creation workflows (links to reusable `AGENTS.md` templates like `Coder` and `QA`).
+- **Commit Co-author**: if you make a git commit you MUST add EXACTLY `Co-Authored-By: FinapticoOS <noreply@finaptico.com>` to the end of each commit message. Do not put in your agent name, put `Co-Authored-By: FinapticoOS <noreply@finaptico.com>`.
 
 ## Comment Style (Required)
 

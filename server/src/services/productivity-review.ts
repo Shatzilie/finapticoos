@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, inArray, isNull, notInArray, sql } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
-import { clampIssueRequestDepth } from "@paperclipai/shared";
+import type { Db } from "@finapticoos/db";
+import { clampIssueRequestDepth } from "@finapticoos/shared";
 import {
   agents,
   companies,
@@ -9,7 +9,7 @@ import {
   issueComments,
   issues,
   projects,
-} from "@paperclipai/db";
+} from "@finapticoos/db";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
 import { budgetService } from "./budgets.js";

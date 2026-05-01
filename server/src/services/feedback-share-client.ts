@@ -1,5 +1,5 @@
 import { gzipSync } from "node:zlib";
-import type { FeedbackTraceBundle } from "@paperclipai/shared";
+import type { FeedbackTraceBundle } from "@finapticoos/shared";
 import type { Config } from "../config.js";
 
 // FinapticoOS Sprint 0 Bloque 2: default upstream Paperclip endpoint removed.

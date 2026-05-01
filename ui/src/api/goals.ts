@@ -1,4 +1,4 @@
-import type { Goal } from "@paperclipai/shared";
+import type { Goal } from "@finapticoos/shared";
 import { api } from "./client";
 
 export const goalsApi = {

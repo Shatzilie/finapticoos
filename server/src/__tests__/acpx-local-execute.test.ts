@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { AdapterExecutionContext } from "@paperclipai/adapter-utils";
-import { createAcpxLocalExecutor } from "@paperclipai/adapter-acpx-local/server";
+import type { AdapterExecutionContext } from "@finapticoos/adapter-utils";
+import { createAcpxLocalExecutor } from "@finapticoos/adapter-acpx-local/server";
 import type {
   AcpRuntime,
   AcpRuntimeEvent,

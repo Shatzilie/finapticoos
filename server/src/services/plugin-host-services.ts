@@ -1,4 +1,4 @@
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@finapticoos/db";
 import {
   agentTaskSessions as agentTaskSessionsTable,
   agents as agentsTable,
@@ -7,7 +7,7 @@ import {
   heartbeatRuns,
   issues as issuesTable,
   pluginLogs,
-} from "@paperclipai/db";
+} from "@finapticoos/db";
 import { eq, and, like, desc, inArray, sql } from "drizzle-orm";
 import type {
   HostServices,
@@ -20,8 +20,8 @@ import type {
   IssueComment,
   PluginIssueAssigneeSummary,
   PluginIssueOrchestrationSummary,
-} from "@paperclipai/plugin-sdk";
-import type { CreateIssueThreadInteraction, IssueDocumentSummary } from "@paperclipai/shared";
+} from "@finapticoos/plugin-sdk";
+import type { CreateIssueThreadInteraction, IssueDocumentSummary } from "@finapticoos/shared";
 import { companyService } from "./companies.js";
 import { agentService } from "./agents.js";
 import { projectService } from "./projects.js";
@@ -805,7 +805,7 @@ export function buildHostServices(
         await scopedBus.emit(params.name, params.companyId, params.payload);
       },
       async subscribe(params: { eventPattern: string; filter?: Record<string, unknown> | null }) {
-        const handler = async (event: import("@paperclipai/plugin-sdk").PluginEvent) => {
+        const handler = async (event: import("@finapticoos/plugin-sdk").PluginEvent) => {
           if (notifyWorker) {
             notifyWorker("onEvent", { event });
           }

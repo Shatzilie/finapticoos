@@ -13,7 +13,7 @@ import type {
   IssueDocument,
   Agent,
   Goal,
-} from "@paperclipai/shared";
+} from "@finapticoos/shared";
 import type {
   EventFilter,
   PluginContext,

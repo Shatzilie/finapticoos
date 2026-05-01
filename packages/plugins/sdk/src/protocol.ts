@@ -31,8 +31,8 @@ import type {
   CreateIssueThreadInteraction,
   Agent,
   Goal,
-} from "@paperclipai/shared";
-export type { PluginLauncherRenderContextSnapshot } from "@paperclipai/shared";
+} from "@finapticoos/shared";
+export type { PluginLauncherRenderContextSnapshot } from "@finapticoos/shared";
 
 import type {
   PluginEvent,

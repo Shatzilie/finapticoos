@@ -1,4 +1,4 @@
-import type { Issue } from "@paperclipai/shared";
+import type { Issue } from "@finapticoos/shared";
 
 export type IssueFilterWorkspaceLookup = {
   mode?: string | null;

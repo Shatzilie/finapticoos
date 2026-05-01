@@ -3,8 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import type { AdapterExecutionContext, AdapterExecutionResult } from "@paperclipai/adapter-utils";
-import { readAdapterExecutionTarget, adapterExecutionTargetSessionIdentity } from "@paperclipai/adapter-utils/execution-target";
+import type { AdapterExecutionContext, AdapterExecutionResult } from "@finapticoos/adapter-utils";
+import { readAdapterExecutionTarget, adapterExecutionTargetSessionIdentity } from "@finapticoos/adapter-utils/execution-target";
 import {
   DEFAULT_PAPERCLIP_AGENT_PROMPT_TEMPLATE,
   applyPaperclipWorkspaceEnv,
@@ -23,8 +23,8 @@ import {
   resolvePaperclipDesiredSkillNames,
   stringifyPaperclipWakePayload,
   type PaperclipSkillEntry,
-} from "@paperclipai/adapter-utils/server-utils";
-import { shellQuote } from "@paperclipai/adapter-utils/ssh";
+} from "@finapticoos/adapter-utils/server-utils";
+import { shellQuote } from "@finapticoos/adapter-utils/ssh";
 import {
   createAcpRuntime,
   createAgentRegistry,

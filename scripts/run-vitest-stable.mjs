@@ -8,14 +8,14 @@ const repoRoot = process.cwd();
 const serverRoot = path.join(repoRoot, "server");
 const serverTestsDir = path.join(repoRoot, "server", "src", "__tests__");
 const nonServerProjects = [
-  "@paperclipai/shared",
-  "@paperclipai/db",
-  "@paperclipai/adapter-utils",
-  "@paperclipai/adapter-acpx-local",
-  "@paperclipai/adapter-codex-local",
-  "@paperclipai/adapter-opencode-local",
-  "@paperclipai/ui",
-  "paperclipai",
+  "@finapticoos/shared",
+  "@finapticoos/db",
+  "@finapticoos/adapter-utils",
+  "@finapticoos/adapter-acpx-local",
+  "@finapticoos/adapter-codex-local",
+  "@finapticoos/adapter-opencode-local",
+  "@finapticoos/ui",
+  "@finapticoos/cli",
 ];
 const routeTestPattern = /[^/]*(?:route|routes|authz)[^/]*\.test\.ts$/;
 const additionalSerializedServerTests = new Set([
@@ -117,7 +117,7 @@ for (const project of nonServerProjects) {
 }
 
 runVitest(
-  ["--project", "@paperclipai/server", ...excludeRouteArgs],
+  ["--project", "@finapticoos/server", ...excludeRouteArgs],
   `server suites excluding ${routeTests.length} serialized suites`,
 );
 
@@ -125,7 +125,7 @@ for (const routeTest of routeTests) {
   runVitest(
     [
       "--project",
-      "@paperclipai/server",
+      "@finapticoos/server",
       routeTest.repoPath,
       "--pool=forks",
       "--poolOptions.forks.isolate=true",
