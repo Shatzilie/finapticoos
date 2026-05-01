@@ -18,9 +18,21 @@ const MIGRATIONS_JOURNAL_JSON = fileURLToPath(new URL("./migrations/meta/_journa
 // migrations or schema TS files, we route every Paperclip table to a
 // dedicated `finapticoos_core` schema via the connection search_path. The
 // drizzle journal (`drizzle.__drizzle_migrations`) stays in its own schema —
-// it does not collide with anything. Rebase note: if upstream changes
-// migration bootstrap logic in this file, port the change and re-apply this
-// isolation patch on top.
+// it does not collide with anything.
+//
+// Second divergence (same hotfix): DATABASE_URL points at Supabase Transaction
+// pooler (port 6543), pgbouncer transaction-mode does NOT support prepared
+// statements. postgres-js uses extended protocol by default and would fail
+// every parametrised query with PostgresError 08P01. We set `prepare: false`
+// on every postgres-js client created here so queries stay parametrised
+// (still SQL-injection safe) but skip the prepared-statement cache.
+//
+// Rebase notes: if upstream (1) changes migration bootstrap logic in this
+// file, port the change and re-apply the search_path + applyCoreSchemaIsolation
+// pieces on top; (2) introduces any new `postgres(url, ...)` factory in this
+// file or elsewhere that uses the same DATABASE_URL, MUST pass `prepare: false`
+// alongside `connection: { search_path: FINAPTICOOS_SEARCH_PATH }` for the
+// pooler compatibility to hold.
 const FINAPTICOOS_CORE_SCHEMA = "finapticoos_core";
 const FINAPTICOOS_SEARCH_PATH = `${FINAPTICOOS_CORE_SCHEMA}, public`;
 
@@ -28,6 +40,7 @@ function createUtilitySql(url: string) {
   return postgres(url, {
     max: 1,
     onnotice: () => {},
+    prepare: false,
     connection: { search_path: FINAPTICOOS_SEARCH_PATH },
   });
 }
@@ -69,7 +82,10 @@ export type MigrationState =
     };
 
 export function createDb(url: string) {
-  const sql = postgres(url, { connection: { search_path: FINAPTICOOS_SEARCH_PATH } });
+  const sql = postgres(url, {
+    prepare: false,
+    connection: { search_path: FINAPTICOOS_SEARCH_PATH },
+  });
   return drizzlePg(sql, { schema });
 }
 
