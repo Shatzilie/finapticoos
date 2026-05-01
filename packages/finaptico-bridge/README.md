@@ -8,16 +8,40 @@ mirror CRM data, plugins fetch on demand via these helpers.
 
 ## Setup once per environment
 
-Apply the SQL in [`migrations/0001_finapticoos_reader_role.sql`](./migrations/0001_finapticoos_reader_role.sql)
-from the Supabase Dashboard SQL Editor. It creates the
-`finapticoos_reader` Postgres role with `GRANT SELECT` on the three CRM
-tables. Idempotent.
+Apply both migrations in order from the Supabase Dashboard SQL Editor.
+Both are idempotent — safe to re-run on existing environments.
 
-Verification (last `SELECT` of the migration) must return:
+### 1. [`migrations/0001_finapticoos_reader_role.sql`](./migrations/0001_finapticoos_reader_role.sql)
+
+Creates the `finapticoos_reader` Postgres role with `GRANT SELECT` on
+the three CRM tables. Verification (last `SELECT` of the migration)
+must return:
 
 | can_select_prospects | can_insert_prospects | can_select_meetings | can_select_interactions |
 |---|---|---|---|
 | true | false | true | true |
+
+### 2. [`migrations/0002_finapticoos_reader_rls_policies.sql`](./migrations/0002_finapticoos_reader_rls_policies.sql)
+
+**Required when the destination tables have Row Level Security enabled**
+— which is the default in Supabase. The Finaptico CRM tables have RLS
+on by default, so without this migration the smoke against Marta returned
+an empty dossier even though `GRANT SELECT` was in place.
+
+**Why**: Postgres checks RLS *after* table-level GRANTs. A role with
+SELECT but no matching policy receives 0 rows silently, not an error —
+the queries appear to "work" but return nothing. This migration adds
+one `FOR SELECT TO finapticoos_reader USING (true)` policy per table,
+which is equivalent to "no RLS for this role only" without affecting
+existing policies for `anon` / `authenticated` / `service_role`.
+
+Verification: `SELECT * FROM pg_policies WHERE policyname LIKE
+'finapticoos_reader_%'` must return 3 rows (one per table).
+
+> Operational note for future installations: any new CRM table the bridge
+> needs to read MUST get its own GRANT (extend 0001) AND its own RLS policy
+> (extend 0002 or write a follow-up migration). Forgetting either step
+> leads to the silent-empty-result failure mode.
 
 ## Env var
 
