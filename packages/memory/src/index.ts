@@ -3,8 +3,22 @@ import { agentSharedMemory } from "./schema.js";
 import { createMemoryClient, type MemoryClient, type MemoryDb } from "./client.js";
 import { createEmbeddingsClient, type EmbeddingsClient } from "./embeddings.js";
 
-export { agentSharedMemory } from "./schema.js";
-export type { AgentSharedMemoryRow, AgentSharedMemoryInsert } from "./schema.js";
+export {
+  agentSharedMemory,
+  finapticoosUsers,
+  finapticoosPlugins,
+  finapticoosApprovals,
+  finapticoosActionsLog,
+} from "./schema.js";
+export type {
+  AgentSharedMemoryRow,
+  AgentSharedMemoryInsert,
+  FinapticoosUserRow,
+  FinapticoosPluginRow,
+  FinapticoosApprovalRow,
+  FinapticoosActionLogRow,
+  FinapticoosActionLogInsert,
+} from "./schema.js";
 export { createMemoryClient, type MemoryClient, type MemoryDb } from "./client.js";
 export {
   createEmbeddingsClient,
