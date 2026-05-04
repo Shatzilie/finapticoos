@@ -110,5 +110,21 @@ export function CloudAccessGate() {
     return <NoBoardAccessPage />;
   }
 
+  // Sprint 0.1 MFA — strict enforcement. If the user is signed in but has
+  // not yet completed MFA enrollment, force them through /auth/mfa-enroll
+  // before the rest of the app renders. The two MFA challenge pages
+  // (/auth/mfa-verify, /auth/mfa-recovery) are reached via partial sessions
+  // post sign-in and are NOT routed through this gate (they live above
+  // CloudAccessGate in App.tsx). The enrol page is also outside this gate
+  // — we redirect to it via Navigate, not by gating it.
+  if (
+    isAuthenticatedMode &&
+    sessionQuery.data &&
+    sessionQuery.data.user.twoFactorEnabled === false
+  ) {
+    const next = encodeURIComponent(`${location.pathname}${location.search}`);
+    return <Navigate to={`/auth/mfa-enroll?next=${next}`} replace />;
+  }
+
   return <Outlet />;
 }

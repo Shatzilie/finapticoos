@@ -174,6 +174,10 @@ export const currentUserProfileSchema = z.object({
   email: z.string().email().nullable(),
   name: z.string().min(1).max(120).nullable(),
   image: profileImageSchema.nullable(),
+  // Sprint 0.1 MFA — populated by better-auth `twoFactor` plugin once a
+  // user completes enrollment. Default false keeps the schema backwards
+  // compatible with sessions issued before the plugin was wired.
+  twoFactorEnabled: z.boolean().default(false),
 });
 
 export type CurrentUserProfile = z.infer<typeof currentUserProfileSchema>;

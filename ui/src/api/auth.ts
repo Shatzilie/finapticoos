@@ -244,10 +244,45 @@ export const authApi = {
    * success — each backup code works exactly once.
    *
    * Recommends regenerating the full set of codes via /profile after every
-   * recovery use, so the user keeps a fresh stash in Bitwarden (deferred
-   * to Sprint 0.1 C4 — settings page).
+   * recovery use, so the user keeps a fresh stash in Bitwarden (settings
+   * UI ships in Sprint 0.1 C4).
    */
   verifyBackupCode: async (input: { code: string }): Promise<void> => {
     await authPost("/two-factor/verify-backup-code", input);
+  },
+
+  /**
+   * Disables MFA for the current user. Requires re-confirming the password
+   * (defense against attacker-with-cookie scenarios). After disable, the
+   * row in `two_factor` is deleted and `user.twoFactorEnabled` flips back
+   * to false. The user can re-enroll later from /profile.
+   *
+   * Strict enforcement (MFAGate) means after disable the user is
+   * immediately redirected back to /auth/mfa-enroll on next route change.
+   */
+  disableTwoFactor: async (input: { password: string }): Promise<void> => {
+    await authPost("/two-factor/disable", input);
+  },
+
+  /**
+   * Regenerates the 10 single-use backup codes. Old codes are invalidated.
+   * Caller must show the new codes once and only once, just like during
+   * initial enrollment. Requires password confirmation.
+   */
+  generateBackupCodes: async (input: { password: string }): Promise<{ backupCodes: string[] }> => {
+    const payload = await authPost("/two-factor/generate-backup-codes", input);
+    if (
+      payload &&
+      typeof payload === "object" &&
+      Array.isArray((payload as { backupCodes?: unknown }).backupCodes)
+    ) {
+      return { backupCodes: (payload as { backupCodes: string[] }).backupCodes };
+    }
+    throw new AuthApiError(
+      "Unexpected generate-backup-codes response shape",
+      200,
+      payload,
+      "two_factor_generate_backup_codes_unexpected_response",
+    );
   },
 };

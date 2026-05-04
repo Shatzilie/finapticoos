@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MFASettingsCard } from "@/components/MFASettingsCard";
 
 function deriveInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -268,6 +269,8 @@ export function ProfileSettings() {
           </div>
         </form>
       </section>
+
+      <MFASettingsCard twoFactorEnabled={sessionQuery.data.user.twoFactorEnabled} />
     </div>
   );
 }

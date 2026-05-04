@@ -17,6 +17,7 @@ async function loadCurrentUserProfile(db: Db, userId: string) {
       email: authUsers.email,
       name: authUsers.name,
       image: authUsers.image,
+      twoFactorEnabled: authUsers.twoFactorEnabled,
     })
     .from(authUsers)
     .where(eq(authUsers.id, userId))
@@ -31,6 +32,7 @@ async function loadCurrentUserProfile(db: Db, userId: string) {
     email: user.email ?? null,
     name: user.name ?? null,
     image: user.image ?? null,
+    twoFactorEnabled: user.twoFactorEnabled ?? false,
   });
 }
 
@@ -81,6 +83,7 @@ export function authRoutes(db: Db) {
         email: authUsers.email,
         name: authUsers.name,
         image: authUsers.image,
+        twoFactorEnabled: authUsers.twoFactorEnabled,
       })
       .then((rows) => rows[0] ?? null);
 
@@ -93,6 +96,7 @@ export function authRoutes(db: Db) {
       email: updated.email ?? null,
       name: updated.name ?? null,
       image: updated.image ?? null,
+      twoFactorEnabled: updated.twoFactorEnabled ?? false,
     }));
   });
 
