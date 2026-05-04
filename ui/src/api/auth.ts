@@ -95,6 +95,36 @@ export function extractTotpSecret(uri: string): string | null {
   return parseTotpUri(uri).secret;
 }
 
+// Sprint 0.1 MFA — sign-in response shape. When the user has MFA
+// enrolled, better-auth replies with `{ twoFactorRedirect: true }` and the
+// session is NOT yet established. Otherwise the response carries normal
+// session data. We treat shapes we don't recognise as `mfa_required: false`
+// (the caller falls back to invalidating the session query, which is the
+// safe default).
+export type SignInResponse =
+  | { mfaRequired: true }
+  | { mfaRequired: false };
+
+function parseSignInResponse(payload: unknown): SignInResponse {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    (payload as { twoFactorRedirect?: unknown }).twoFactorRedirect === true
+  ) {
+    return { mfaRequired: true };
+  }
+  // Some better-auth versions wrap the response as `{ data: { ... } }`.
+  if (
+    payload &&
+    typeof payload === "object" &&
+    typeof (payload as { data?: unknown }).data === "object" &&
+    (payload as { data: { twoFactorRedirect?: unknown } }).data?.twoFactorRedirect === true
+  ) {
+    return { mfaRequired: true };
+  }
+  return { mfaRequired: false };
+}
+
 async function authPatch<T>(path: string, body: Record<string, unknown>, parse: (value: unknown) => T): Promise<T> {
   const res = await fetch(`/api/auth${path}`, {
     method: "PATCH",
@@ -126,8 +156,13 @@ export const authApi = {
     return nested;
   },
 
-  signInEmail: async (input: { email: string; password: string }) => {
-    await authPost("/sign-in/email", input);
+  // Sprint 0.1 MFA — returns the raw response. When the user has MFA
+  // enrolled, better-auth replies with `{ twoFactorRedirect: true }` and
+  // does NOT establish a full session yet. The caller must redirect to
+  // /auth/mfa-verify and let the user complete the second factor.
+  signInEmail: async (input: { email: string; password: string }): Promise<SignInResponse> => {
+    const payload = await authPost("/sign-in/email", input);
+    return parseSignInResponse(payload);
   },
 
   signUpEmail: async (input: { name: string; email: string; password: string }) => {
@@ -193,12 +228,26 @@ export const authApi = {
   /**
    * Verifies a 6-digit TOTP code. Used in two contexts:
    * 1. During enrollment, to confirm the user correctly scanned the secret.
-   * 2. After sign-in, when the session response indicates `requiresTwoFactor`.
+   * 2. After sign-in, when the session response indicates `twoFactorRedirect`.
    *
    * On success, the server flips `user.twoFactorEnabled = true` (case 1) or
    * upgrades the session to fully authenticated (case 2).
    */
   verifyTotp: async (input: { code: string }): Promise<void> => {
     await authPost("/two-factor/verify-totp", input);
+  },
+
+  /**
+   * Verifies a single-use backup recovery code (alphanumeric, generated at
+   * enrollment time and shown once). Used as a fallback when the user has
+   * lost access to their authenticator app. Server consumes the code on
+   * success — each backup code works exactly once.
+   *
+   * Recommends regenerating the full set of codes via /profile after every
+   * recovery use, so the user keeps a fresh stash in Bitwarden (deferred
+   * to Sprint 0.1 C4 — settings page).
+   */
+  verifyBackupCode: async (input: { code: string }): Promise<void> => {
+    await authPost("/two-factor/verify-backup-code", input);
   },
 };

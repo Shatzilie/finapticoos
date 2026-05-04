@@ -47,6 +47,8 @@ import { OrgChart } from "./pages/OrgChart";
 import { NewAgent } from "./pages/NewAgent";
 import { AuthPage } from "./pages/Auth";
 import { MFAEnrollPage } from "./pages/MFAEnroll";
+import { MFAVerifyPage } from "./pages/MFAVerify";
+import { MFARecoveryPage } from "./pages/MFARecovery";
 import { BoardClaimPage } from "./pages/BoardClaim";
 import { CliAuthPage } from "./pages/CliAuth";
 import { InviteLandingPage } from "./pages/InviteLanding";
@@ -261,6 +263,8 @@ export function App() {
       <Routes>
         <Route path="auth" element={<AuthPage />} />
         <Route path="auth/mfa-enroll" element={<MFAEnrollPage />} />
+        <Route path="auth/mfa-verify" element={<MFAVerifyPage />} />
+        <Route path="auth/mfa-recovery" element={<MFARecoveryPage />} />
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />

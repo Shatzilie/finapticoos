@@ -8,16 +8,12 @@ import { Button } from "@/components/ui/button";
 import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
 import { Sparkles } from "lucide-react";
 
-// FinapticoOS Sprint 0 Bloque 8 — TODO crítico Sprint 0.1 (≤2 semanas):
-// integrar MFA obligatorio. Esta página actualmente expone solo email +
-// password porque Paperclip upstream no incluye flujo TOTP. Cuando se active
-// el plugin `twoFactor` de better-auth en server/src/auth/better-auth.ts,
-// añadir aquí el routing al challenge: si la respuesta de sign-in trae
-// `requiresTwoFactor: true`, redirigir a /auth/mfa-verify; si el user no
-// tiene MFA enrollado y el server lo exige, redirigir a /auth/mfa-enroll.
-// Plan Sprint 0 línea 96 dice "MFA OBLIGATORIO"; el día 1 entrega login
-// password robusto + sesión 30d + deployment authenticated como mitigación
-// transitoria. Tarea Notion crítica (Fatima) gestiona el deadline.
+// Sprint 0.1 MFA wired (commits 64ce07c4 + 3561ce36 + this commit C3).
+// Sign-in flow now branches on response: if better-auth returns
+// `twoFactorRedirect: true`, the user has MFA enrolled and must complete
+// the second factor at /auth/mfa-verify before the session is established.
+// Otherwise, normal redirect to nextPath. Forced enrollment for users who
+// haven't set up MFA yet ships in C4 via MFAGate.
 
 type AuthMode = "sign_in" | "sign_up";
 
@@ -50,17 +46,27 @@ export function AuthPage() {
   const mutation = useMutation({
     mutationFn: async () => {
       if (mode === "sign_in") {
-        await authApi.signInEmail({ email: email.trim(), password });
-        return;
+        return await authApi.signInEmail({ email: email.trim(), password });
       }
       await authApi.signUpEmail({
         name: name.trim(),
         email: email.trim(),
         password,
       });
+      return { mfaRequired: false } as const;
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       setError(null);
+      // Sprint 0.1 — sign-in with MFA enrolled returns `twoFactorRedirect:
+      // true`. The session is partial; do NOT invalidate the session query
+      // yet (it would just return null), and route the user to the TOTP
+      // challenge page. `nextPath` is preserved so they land where they
+      // intended after verifying.
+      if (result?.mfaRequired) {
+        const search = nextPath !== "/" ? `?next=${encodeURIComponent(nextPath)}` : "";
+        navigate(`/auth/mfa-verify${search}`, { replace: true });
+        return;
+      }
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.session });
       await queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       navigate(nextPath, { replace: true });
