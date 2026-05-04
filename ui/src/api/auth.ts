@@ -74,6 +74,27 @@ async function authPost(path: string, body: Record<string, unknown>) {
   return payload;
 }
 
+// Sprint 0.1 MFA — typed responses for the better-auth twoFactor plugin
+// endpoints. Server returns { totpURI, backupCodes } on enable; the URI
+// embeds the TOTP secret + issuer for direct rendering as a QR code.
+export type EnableTwoFactorResponse = {
+  totpURI: string;
+  backupCodes: string[];
+};
+
+function parseTotpUri(uri: string): { secret: string | null } {
+  try {
+    const url = new URL(uri);
+    return { secret: url.searchParams.get("secret") };
+  } catch {
+    return { secret: null };
+  }
+}
+
+export function extractTotpSecret(uri: string): string | null {
+  return parseTotpUri(uri).secret;
+}
+
 async function authPatch<T>(path: string, body: Record<string, unknown>, parse: (value: unknown) => T): Promise<T> {
   const res = await fetch(`/api/auth${path}`, {
     method: "PATCH",
@@ -130,5 +151,54 @@ export const authApi = {
 
   signOut: async () => {
     await authPost("/sign-out", {});
+  },
+
+  // Sprint 0.1 MFA. Plugin endpoints live under /api/auth/two-factor/* and
+  // are mounted by better-auth at server boot.
+
+  /**
+   * Triggers TOTP enrollment. The user must re-confirm their current
+   * password — better-auth forces this to prevent attacker-with-cookie
+   * scenarios from binding their own authenticator. On success the server
+   * returns the TOTP URI (otpauth://...) plus 10 single-use backup codes.
+   *
+   * The URI must be rendered as a QR (qrcode.react) AND surfaced as a
+   * manual fallback secret (so the user can paste it if their app doesn't
+   * support camera scan). Backup codes must be stored once-and-only-once
+   * by the user (Bitwarden) — server-side they are stored hashed.
+   *
+   * Important: at this point the user is NOT yet enrolled. Enrollment
+   * completes only after the user POSTs `/two-factor/verify-totp` with a
+   * valid 6-digit code from their authenticator (proves they correctly
+   * scanned the secret).
+   */
+  enableTwoFactor: async (input: { password: string }): Promise<EnableTwoFactorResponse> => {
+    const payload = await authPost("/two-factor/enable", input);
+    if (
+      payload &&
+      typeof payload === "object" &&
+      typeof (payload as { totpURI?: unknown }).totpURI === "string" &&
+      Array.isArray((payload as { backupCodes?: unknown }).backupCodes)
+    ) {
+      return payload as EnableTwoFactorResponse;
+    }
+    throw new AuthApiError(
+      "Unexpected enable two-factor response shape",
+      200,
+      payload,
+      "two_factor_enable_unexpected_response",
+    );
+  },
+
+  /**
+   * Verifies a 6-digit TOTP code. Used in two contexts:
+   * 1. During enrollment, to confirm the user correctly scanned the secret.
+   * 2. After sign-in, when the session response indicates `requiresTwoFactor`.
+   *
+   * On success, the server flips `user.twoFactorEnabled = true` (case 1) or
+   * upgrades the session to fully authenticated (case 2).
+   */
+  verifyTotp: async (input: { code: string }): Promise<void> => {
+    await authPost("/two-factor/verify-totp", input);
   },
 };
