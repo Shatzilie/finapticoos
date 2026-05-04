@@ -32,7 +32,7 @@ cualquier cambio estructural.
 | **FinapticoOS extensions en `crm.finapticoos_*`** | Convención prefijo `finapticoos_` evita contaminar namespace `crm.*` del CRM Finaptico (que también está en `crm.*` con sus propias tablas). Schema único, prefijos distintos. |
 | **RLS policies retroactivas** (migration 0002 bridge) | El rol `finapticoos_reader` tenía `GRANT SELECT` pero las tablas `crm.prospects/meetings/interactions` tienen RLS habilitado en Supabase. Postgres comprueba RLS DESPUÉS del GRANT → queries devolvían 0 filas silenciosamente. Migration 0002 añade `CREATE POLICY ... USING (true)` por tabla. Cualquier nueva tabla CRM consumida debe extender ambas (0001 GRANT + 0002 policy). |
 | **Entrypoint `chown -R node:node /finapticoos` incondicional** | Heredado upstream, el chown solo corría cuando el UID/GID del runtime difería del build (deploy típico Easypanel pasa UID=1000=build default → chown skipped). Pero cualquier root pass-through (Easypanel Console exec, scripts admin) crea archivos `root:root`. El restart entonces atrapaba runtime con EACCES en `.env`. Fix: chown siempre como root antes del `exec gosu node`, no condicional. |
-| **MFA diferido Sprint 0.1** | Plan dice "MFA OBLIGATORIO" pero Paperclip upstream NO incluye plugin `twoFactor` ni UI enrollment/verify/recovery. Implementarlo full-stack es 1.5-2 días (backend + 4-5 páginas UI + tests + nuevas tablas TOTP secrets). Sprint 0 ya consumió día 1+ peleando bootstrap migrations. Mitigación transitoria: solo Fatima admin, deploymentMode authenticated, BETTER_AUTH_SECRET 32 bytes random hex, sesión 30d, disableSignUp:true. Deuda crítica con deadline 2026-05-15. |
+| **MFA Sprint 0.1 — CERRADO 2026-05-04** | Original: plan dice "MFA OBLIGATORIO" pero Paperclip upstream NO incluye plugin `twoFactor` ni UI. Sprint 0 difirió a Sprint 0.1 con deadline 2026-05-15. **Cerrado 11 días antes**: 5 commits sobre `feature/mfa-sprint-0.1` mergeados ff a `finaptico/main` (`64ce07c4` backend + `3561ce36` enroll + `1eaaf181` verify+recovery + `c6629220` enforcement+settings + `64aeaf0b` docs+E2E). Smoke prod cuenta Fatima verde. Detalle completo en sección "Cerradas en Sprint 0.1". |
 | **CSP `'unsafe-inline'` provisional** | Paperclip UI hereda inline scripts/styles. Endurecerlo a nonces o assets extraídos es trabajo adicional. TODO Sprint 1: auditar y migrar. |
 | **Smoke como paquete standalone** (`@finapticoos/smoke`), NO ampliando upstream `plugin-hello-world-example` | Preserva el ejemplo educacional minimal del SDK plugin Paperclip. El smoke ejerce stack completo (bridge + memory + adapter + approvals) que NO encaja en lifecycle plugin SDK estándar. |
 
@@ -52,11 +52,18 @@ cualquier cambio estructural.
 
 | Deuda | Plazo | Tracking |
 |---|---|---|
-| **MFA full-stack** (plugin twoFactor better-auth + páginas UI enrollment/verify/recovery + tablas TOTP) | **2026-05-15** | Tarea Notion crítica (Fatima). TODO marcado en `server/src/auth/better-auth.ts` y `ui/src/pages/Auth.tsx` con instrucciones precisas. |
 | **CSP `'unsafe-inline'`** en script-src y style-src | Sprint 1 | TODO marcado en `server/src/middleware/hardening.ts`. Migrar a nonces o assets extraídos. |
 | **`ANTHROPIC_API_KEY` shared con n8n** | Sprint 1 | Reusa `sk-ant-api03-E7S4ombB...` que también consume n8n para posts blog. Si Sprint 1 escala uso de Anthropic en plugins, dedicar key separada para FinapticoOS y monitorizar gasto independiente. |
 | **Auto Deploy Easypanel bug heredado** | Cuando Hostinger/Easypanel resuelvan | Mantener Implementar manual. Documentado por Fatima en plan VPS migración. |
 | **Pooler URL formato** | Sprint 1 si escalan conexiones | Actualmente `db.utwhvnafvtardndgkbjn.supabase.co:5432` — Session pooler. Si Supabase migra al formato `aws-0-<region>.pooler.supabase.com:5432`, actualizar env var (no requiere code change). |
+| **UX nav `MFASettingsCard`** (Sprint 0.1 deuda residual) | Sprint 1 | Card existe en `ui/src/components/MFASettingsCard.tsx` y se renderiza en `ui/src/pages/ProfileSettings.tsx`, pero no es accesible vía nav típico Paperclip. Workaround temporal: regenerate codes / disable vía endpoint better-auth directo o rescue SQL. Smoke prod 04/05 saltó esta verificación porque comportamiento (enforce + verify) ya estaba validado. |
+| **E2E flow completo TOTP real** | Sprint 1 o post-deploy | Actual `tests/e2e/mfa-routes-smoke.spec.ts` solo verifica render. Flow real requiere lib `otpauth` + bootstrap admin invite + ~3-4h. Smoke prod manual (Fatima 04/05) sustituyó el E2E completo. |
+| **Defensa profunda server-side hook** en endpoints sensibles | Sprint 1 si Editors abren rutas cross-user | Frontend gate (`MFAGate` en `CloudAccessGate`) suficiente para single-admin Sprint 0.1. |
+| **Password reset flow** | Sprint 1 | Paperclip upstream NO incluye handler aunque la ruta `/api/auth/reset-password` está registrada. Documentado en `docs/MFA_RESCUE.md` que NO está en scope MFA — separate task. |
+
+### Cerradas en Sprint 0.1
+
+- ✅ **MFA full-stack** (deadline original 2026-05-15) — **shipped 2026-05-04, 11 días antes**. Plugin `twoFactor` + tabla `two_factor` + columna `user.two_factor_enabled` + páginas `/auth/mfa-enroll`/`/mfa-verify`/`/mfa-recovery` + componente `OTPInput` accesible + enforcement strict en `CloudAccessGate` + `docs/MFA_RESCUE.md` (procedimiento unlock SQL Bitwarden) + tests smoke routes Playwright. 5 commits en `feature/mfa-sprint-0.1` (`64ce07c4`, `3561ce36`, `1eaaf181`, `c6629220`, `64aeaf0b`) mergeados ff a `finaptico/main`. Smoke prod cuenta Fatima verde (login → forced enroll → submit TOTP → enrollment confirmed → logout → login → forced verify → access app). Backup tag local `backup/pre-mfa-2026-05-04 → 54283274` retenido por seguridad.
 
 ---
 
@@ -123,7 +130,7 @@ Cronología en `finaptico/main` (más antiguo → más reciente):
   - `frontend/src/app/api/webhooks/finapticoos-action/route.ts` — endpoint receptor con HMAC validation.
   - Posible micro-migration `crm.interactions.interaction_type` CHECK +`ai_action`.
 - **Bloque 10 docs cierre** — actualizar `docs/project_memory.md` + `implementation/task_tracker.md` del repo CRM con entrada "Sprint 0 FinapticoOS shipped". También en repo CRM, no aquí.
-- **Sprint 0.1 MFA full-stack** — deadline 2026-05-15. Backend plugin twoFactor + 4-5 páginas UI + nuevas tablas TOTP + tests. Trabajo de ~1.5-2 días dedicados.
+- ~~**Sprint 0.1 MFA full-stack** — deadline 2026-05-15.~~ **CERRADO 2026-05-04, 11 días antes** (ver sección "Deudas conocidas → Cerradas en Sprint 0.1" arriba). Plugin `twoFactor` + tabla `two_factor` + páginas enroll/verify/recovery + enforcement strict + `docs/MFA_RESCUE.md`. Smoke prod cuenta Fatima verde.
 - **Agente Marco** (rebase semanal upstream Paperclip + documentar patrones de conflicto) — spec en `Desktop/Finaptico Asistente/agentes/spec_marco_monitor_paperclip_upstream.md`. Post-FinapticoOS deploy.
 - **Sprint 1 Editors** (WP / LinkedIn / Vercel) — plugins reales con UI Company integrada (ahí sí necesitarán Company virtual del wizard FinapticoOS), aprobaciones via UI propia, integración con bridge + memory + adapter ya listos.
 
