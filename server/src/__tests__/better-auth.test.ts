@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { BetterAuthOptions } from "better-auth";
 import { getCookies } from "better-auth/cookies";
 import {
   buildBetterAuthAdvancedOptions,
+  createBetterAuthInstance,
   deriveAuthCookiePrefix,
   deriveAuthTrustedOrigins,
 } from "../auth/better-auth.js";
@@ -74,5 +75,46 @@ describe("Better Auth cookie scoping", () => {
     ]));
     expect(trustedOrigins).not.toContain("https://board.example.test:3100");
     expect(trustedOrigins).not.toContain("http://board.example.test:3100");
+  });
+});
+
+describe("Better Auth two-factor plugin (Sprint 0.1 MFA)", () => {
+  const ORIGINAL_SECRET = process.env.BETTER_AUTH_SECRET;
+
+  beforeEach(() => {
+    process.env.BETTER_AUTH_SECRET = "test-secret-deterministic";
+  });
+
+  afterEach(() => {
+    if (ORIGINAL_SECRET === undefined) delete process.env.BETTER_AUTH_SECRET;
+    else process.env.BETTER_AUTH_SECRET = ORIGINAL_SECRET;
+  });
+
+  it("registers the twoFactor plugin and exposes its endpoints", () => {
+    // Db is unused at construction time (only at request time). Pass an
+    // empty stub typed as the real Db — Better Auth captures the reference
+    // for later, no eager queries here.
+    const db = {} as unknown as Parameters<typeof createBetterAuthInstance>[0];
+    const config = {
+      authBaseUrlMode: "auto",
+      authPublicBaseUrl: undefined,
+      authDisableSignUp: true,
+      deploymentMode: "authenticated",
+      allowedHostnames: ["finapticoos.finaptico.com"],
+      port: 3100,
+    } as unknown as Parameters<typeof createBetterAuthInstance>[1];
+
+    const auth = createBetterAuthInstance(db, config, [
+      "https://finapticoos.finaptico.com",
+    ]);
+
+    // Endpoints exposed by the plugin live under `auth.api`. We expect at
+    // least `enableTwoFactor`, `disableTwoFactor`, `verifyTOTP` and
+    // `verifyBackupCode` per better-auth/plugins/two-factor docs.
+    const api = auth.api as Record<string, unknown>;
+    expect(api).toHaveProperty("enableTwoFactor");
+    expect(api).toHaveProperty("disableTwoFactor");
+    expect(api).toHaveProperty("verifyTOTP");
+    expect(api).toHaveProperty("verifyBackupCode");
   });
 });

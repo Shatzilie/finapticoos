@@ -3,10 +3,12 @@ import type { IncomingHttpHeaders } from "node:http";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { toNodeHandler } from "better-auth/node";
+import { twoFactor } from "better-auth/plugins/two-factor";
 import type { Db } from "@finapticoos/db";
 import {
   authAccounts,
   authSessions,
+  authTwoFactor,
   authUsers,
   authVerifications,
 } from "@finapticoos/db";
@@ -113,6 +115,7 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins:
         session: authSessions,
         account: authAccounts,
         verification: authVerifications,
+        twoFactor: authTwoFactor,
       },
     }),
     emailAndPassword: {
@@ -123,16 +126,24 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins:
     // FinapticoOS Sprint 0 Bloque 8 — sesión persistente 30 días + sliding
     // window que refresca cuando la sesión supera 24 h. Spec L96. Cookies
     // caducadas o cuentas eliminadas → 401 hasta nuevo sign-in.
-    //
-    // TODO Sprint 0.1 (≤2 semanas, deuda crítica documentada): añadir plugin
-    // `twoFactor` de better-auth + UI de enrollment/verify/recovery + tablas
-    // de TOTP secrets/backup codes. Plan línea 96 dice "MFA OBLIGATORIO" y
-    // Sprint 0 lo difiere por scope (Paperclip upstream no incluye MFA).
     session: {
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24,
     },
     advanced: buildBetterAuthAdvancedOptions({ disableSecureCookies: isHttpOnly }),
+    // Sprint 0.1 MFA — plugin twoFactor: TOTP (Google Authenticator/Authy/
+    // 1Password) + 10 backup codes. `issuer` aparece en la app authenticator
+    // como nombre del workspace. Strict enforcement (forced enrol tras login
+    // si el user no tiene MFA) se aplica en el frontend (`MFAGate` component)
+    // y, defensa profunda, en hooks server-side de endpoints sensibles.
+    plugins: [
+      twoFactor({
+        issuer: "FinapticoOS",
+        // backupCodes default = 10. Mostrar UNA SOLA VEZ tras enrol con
+        // botón "He guardado los códigos en Bitwarden". Se pueden regenerar
+        // desde /instance/settings/profile (UI Sprint 0.1 C4).
+      }),
+    ],
   };
 
   if (!baseUrl) {
